@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -29,8 +29,8 @@ type ProjectConfig struct {
 	Name string `yaml:"name"`
 }
 
-// loadConfig 从 zyrthi.yaml 加载配置
-func loadConfig(path string) (*Config, error) {
+// Load 从 zyrthi.yaml 加载配置
+func Load(path string) (*Config, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err

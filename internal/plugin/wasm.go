@@ -1,6 +1,6 @@
 //go:build !nowasm
 
-package main
+package plugin
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
+	"github.com/zyrthi-io/zyrthi-flash/internal/config"
+	"github.com/zyrthi-io/zyrthi-flash/internal/serial"
 )
 
 // WasmPlugin WASM 插件实现
@@ -17,13 +19,12 @@ type WasmPlugin struct {
 	ctx     context.Context
 	runtime wazero.Runtime
 	module  api.Module
-	cfg     *Config
+	cfg     *config.Config
 	baud    int
-	api     *HostAPI
+	api     *serial.HostAPI
 }
 
-// newWasmPlugin 创建 WASM 插件实例
-func newWasmPlugin(ctx context.Context, wasmPath string, cfg *Config, baud int) (*WasmPlugin, error) {
+func newWasmPlugin(ctx context.Context, wasmPath string, cfg *config.Config, baud int) (*WasmPlugin, error) {
 	wasmBytes, err := os.ReadFile(wasmPath)
 	if err != nil {
 		return nil, fmt.Errorf("读取 WASM 文件失败: %w", err)
@@ -31,7 +32,6 @@ func newWasmPlugin(ctx context.Context, wasmPath string, cfg *Config, baud int) 
 
 	r := wazero.NewRuntime(ctx)
 
-	// 实例化 Host API（与插件接口匹配）
 	_, err = r.NewHostModuleBuilder("env").
 		NewFunctionBuilder().WithFunc(hostSerialWrite).Export("serial_write").
 		NewFunctionBuilder().WithFunc(hostSerialRead).Export("serial_read").
@@ -63,13 +63,13 @@ func newWasmPlugin(ctx context.Context, wasmPath string, cfg *Config, baud int) 
 
 var currentPlugin *WasmPlugin
 
-func (p *WasmPlugin) Init(api *HostAPI) error {
+func (p *WasmPlugin) Init(api *serial.HostAPI) error {
 	p.api = api
 	currentPlugin = p
 
 	initFn := p.module.ExportedFunction("init")
 	if initFn == nil {
-		return nil // init 可选
+		return nil
 	}
 	_, err := initFn.Call(p.ctx)
 	return err
@@ -131,7 +131,7 @@ func (p *WasmPlugin) Erase(chip string, offset uint32, size uint32) error {
 func (p *WasmPlugin) Reset(chip string) error {
 	fn := p.module.ExportedFunction("reset")
 	if fn == nil {
-		p.api.SerialSetDTR(false)
+		p.api.SerialSetDTR(true)
 		p.api.SerialSetRTS(true)
 		time.Sleep(100 * time.Millisecond)
 		p.api.SerialSetRTS(false)

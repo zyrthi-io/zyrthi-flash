@@ -1,20 +1,23 @@
 //go:build nowasm
 
-package main
+package plugin
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/zyrthi-io/zyrthi-flash/internal/config"
+	"github.com/zyrthi-io/zyrthi-flash/internal/serial"
 )
 
-// WasmPlugin WASM 插件存根（无 WASM 支持时使用）
+// WasmPlugin WASM 插件存根
 type WasmPlugin struct{}
 
-func newWasmPlugin(ctx context.Context, wasmPath string, cfg *Config, baud int) (*WasmPlugin, error) {
-	return nil, fmt.Errorf("WASM 支持未编译，请使用 '-tags nowasm' 以外的构建标签")
+func newWasmPlugin(ctx context.Context, wasmPath string, cfg *config.Config, baud int) (*WasmPlugin, error) {
+	return nil, fmt.Errorf("WASM 支持未编译")
 }
 
-func (p *WasmPlugin) Init(api *HostAPI) error {
+func (p *WasmPlugin) Init(api *serial.HostAPI) error {
 	return fmt.Errorf("WASM 不支持")
 }
 
